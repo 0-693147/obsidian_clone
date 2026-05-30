@@ -2,4 +2,9 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+//    alias(libs.plugins.hilt) apply false
+    id("com.google.devtools.ksp") version "2.3.4" apply false
+    val room_version = "2.8.4"
+    id("androidx.room") version "$room_version" apply false
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.0-RC2"
 }
