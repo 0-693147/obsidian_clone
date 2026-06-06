@@ -41,12 +41,20 @@
                 Result.failure(e)
             }
 
-        suspend fun retrieveNoteList(): Result<List<Notes>> =
+        suspend fun retrieveNoteListLight(): Result<List<Notes>> =
             try {
                 val lightNotes = noteDao.retrieveNoteListLight()?: emptyList()
                 Result.success(lightNotes.map { lightNote ->
                     Notes(lightNote.id, lightNote.title, "")
                 })
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun retrieveNoteListFull(): Result<List<Notes>> =
+            try {
+                val notes = noteDao.retrieveNoteListFull()?: emptyList()
+                Result.success(notes)
             } catch (e: Exception) {
                 Result.failure(e)
             }

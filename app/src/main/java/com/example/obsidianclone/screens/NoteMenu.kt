@@ -42,6 +42,8 @@ import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteRoute
 import com.example.obsidianclone.Notes
 import com.example.obsidianclone.R
+import com.example.obsidianclone.SearchScreenRoute
+import com.example.obsidianclone.SettingsScreenRoute
 
 
 //@Preview
@@ -61,8 +63,8 @@ import com.example.obsidianclone.R
     val noteListState by view.notes.collectAsStateWithLifecycle(emptyList())
 
     Scaffold(
-        topBar = {Path("/path")},
-        bottomBar = {BottomBar(view)},
+        topBar = {TopBar("/path", navController)},
+        bottomBar = {BottomBar(view, navController)},
         modifier = Modifier
             .fillMaxSize()
             .background(color = Colors.backgroundColor)
@@ -84,20 +86,48 @@ import com.example.obsidianclone.R
 }
 
 @Composable
-fun Path(path : String) {
+private fun TopBar(
+    path : String = "/path",
+    navControler: NavController
+) {
     Box(
-        contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
             .background(color = Colors.backgroundColor)
-            .padding(8.dp)
     ) {
-        Text(text = path, color = Color.White)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+        ) {
+            Text(text = path, color = Color.White)
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .padding(8.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            IconButton(
+                onClick = {
+                    navControler.navigate(SettingsScreenRoute)
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.settings_icon),
+                    contentDescription = "Graph Icon",
+                    tint = Colors.textColor
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun BottomBar(view: NoteMenuViewModel) {
+private fun BottomBar(
+    view: NoteMenuViewModel,
+    navController: NavController,
+) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -111,7 +141,9 @@ private fun BottomBar(view: NoteMenuViewModel) {
         ) {
             item {
                 IconButton(
-                    onClick = {}
+                    onClick = {
+                        navController.navigate(SearchScreenRoute)
+                    }
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.search_icon),

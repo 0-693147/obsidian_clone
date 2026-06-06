@@ -75,6 +75,9 @@ interface NoteDao {
     @Query("SELECT id, title, '' FROM Notes")
     suspend fun retrieveNoteListLight(): List<LightNotes>
 
+    @Query("SELECT id, title, text FROM Notes")
+    suspend fun retrieveNoteListFull(): List<Notes>
+
     @Query("SELECT * FROM Notes WHERE id = :id")
     suspend fun retrieveFullNote(id: Int): Notes
 

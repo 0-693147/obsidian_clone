@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -226,13 +227,12 @@ fun NoteEditor(
                                 .padding(16.dp),
                             shape = RoundedCornerShape(16.dp),
                         ) {
-                            Column (
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                ,
+                                    .fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                            ){
+                            ) {
                                 Text(
                                     modifier = Modifier
                                         .padding(16.dp),
@@ -264,7 +264,7 @@ fun NoteEditor(
                     }
                 }
 
-            LazyColumn(
+                LazyColumn(
                     modifier = Modifier
                         .padding(innerPadding)
                         .background(color = Colors.backgroundColor)
@@ -317,8 +317,8 @@ fun NoteEditor(
                             ),
                             permissionText = "To view images, grant storage permissions",
                             content = {
-                                Column (
-                                ){
+                                Column(
+                                ) {
                                     val exoPlayer = ExoPlayer.Builder(context).build()
                                     val mediaItem = MediaItem.fromUri(video.link)
                                     exoPlayer.setMediaItem(mediaItem)
@@ -365,16 +365,15 @@ fun NoteEditor(
                         )
                     }
 
-
-                items(audios) { audio ->
-                    val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
-                    MissingPermissionsComponent(
-                        permissions = listOf(
-                            Manifest.permission.READ_EXTERNAL_STORAGE,
-                        ),
-                        permissionText = "To view images, grant storage permissions",
+                    items(audios) { audio ->
+                        val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
+                        MissingPermissionsComponent(
+                            permissions = listOf(
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                            ),
+                            permissionText = "To view images, grant storage permissions",
                             content = {
-                                Column (
+                                Column(
                                 ) {
                                     val exoPlayer = ExoPlayer.Builder(context).build()
                                     val mediaItem = MediaItem.fromUri(audio.link)
@@ -418,14 +417,16 @@ fun NoteEditor(
                                         text = "Delete Audio"
                                     )
                                 }
-                        },
-                    )
-                }
-
+                            },
+                        )
+                    }
 
                     item() {
                         TextField(
-                            modifier = Modifier.background(color = Colors.backgroundColor),
+                            modifier = Modifier
+                                .background(color = Colors.backgroundColor)
+                                .defaultMinSize(minHeight = 200.dp)
+                            ,
                             textStyle = TextStyle(
                                 fontSize = 4.em
                             ),
@@ -473,7 +474,7 @@ private fun NoteTitleBar (
                     view.updateNoteTitle(id, newTitle)
                 },
                 textStyle = TextStyle(
-                    fontSize = 10.em
+                    fontSize = 7.em
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Colors.backgroundColor,
