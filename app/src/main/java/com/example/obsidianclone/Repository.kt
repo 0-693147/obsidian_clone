@@ -50,4 +50,46 @@
             } catch (e: Exception) {
                 Result.failure(e)
             }
+
+        suspend fun retrieveAsset(id: Int): Result<NoteAssets> =
+            try {
+                val asset = noteDao.retrieveAsset(id)
+                Result.success(asset)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun retrieveNoteAssetsByType(id: Int, type: Int): Result<List<NoteAssets>> =
+            try {
+                val assets = noteDao.retrieveNoteAssetsByType(id, type)
+                Result.success(assets)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun retrieveNoteAssets(id: Int): Result<List<NoteAssets>> =
+            try {
+                val allAssets = noteDao.retrieveNoteAssets(id)
+                Result.success(allAssets)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun createNoteAsset(asset: NoteAssets): Result<Unit> =
+            try {
+                noteDao.writeAsset(asset)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun deleteNoteAsset(assetId: Int): Result<Unit> =
+        try {
+            println("123412341 repository: using delete dao")
+            println("asset id " + assetId.toString())
+            noteDao.deleteAsset(assetId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }

@@ -1,7 +1,7 @@
 package com.example.obsidianclone.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -17,23 +17,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
+import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteRoute
-import com.example.obsidianclone.NoteViewModel
 import com.example.obsidianclone.Notes
 import com.example.obsidianclone.R
 
@@ -47,10 +53,11 @@ import com.example.obsidianclone.R
 //        viewModel = view
 //    )
 //}
-@Composable fun NotesScreen(
+@Composable fun NoteMenu(
     navController: NavController,
-    view: NoteViewModel,
+    view: NoteMenuViewModel,
 ) {
+    view.updateLightNoteList()
     val noteListState by view.notes.collectAsStateWithLifecycle(emptyList())
 
     Scaffold(
@@ -68,7 +75,7 @@ import com.example.obsidianclone.R
         ) {
             NoteList(
                 navController = navController,
-                viewModel = view,
+                view = view,
                 noteList = noteListState
             )
             Spacer(modifier = Modifier.fillMaxHeight())
@@ -90,7 +97,7 @@ fun Path(path : String) {
 }
 
 @Composable
-private fun BottomBar(view: NoteViewModel) {
+private fun BottomBar(view: NoteMenuViewModel) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -144,7 +151,7 @@ private fun BottomBar(view: NoteViewModel) {
 @Composable
 fun NoteList(
     navController: NavController,
-    viewModel: NoteViewModel,
+    view: NoteMenuViewModel,
     noteList: List<Notes>
 ) {
     LazyColumn(
@@ -153,17 +160,63 @@ fun NoteList(
             .padding(36.dp)
     ) {
         items(noteList) { note ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(color = Colors.panelColor)
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .clickable { navController.navigate( route = NoteRoute(note.id))}
-                ) {
-                    Text(text = note.title, color = Color.White)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+            var isContextVisible = remember { mutableStateOf(false) }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color = Colors.panelColor)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .pointerInput(true) {
+                        detectTapGestures(
+                            onLongPress = {
+                                isContextVisible.value = true
+                            },
+                            onTap = {
+                                println(note)
+                                navController.navigate( route = NoteRoute(note.id))
+                            }
+                        )
+                    }
+            ) {
+                Text(text = note.title, color = Color.White)
+                ContextMenu(
+                    isContextVisible = isContextVisible,
+                    deleteNoteFunction = {view.deleteNote(note.id)},
+                    addNewNoteFunction = {view.createEmptyNote()},
+                    title = note.title
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
         }
+    }
+}
+
+
+@Composable
+private fun ContextMenu(
+    isContextVisible: MutableState<Boolean>,
+    deleteNoteFunction: () -> Unit,
+    addNewNoteFunction: () -> Unit,
+    title: String
+) {
+    DropdownMenu(
+        expanded = isContextVisible.value,
+        onDismissRequest = { isContextVisible.value = false},
+    ) {
+        DropdownMenuItem(
+            text = { Text(text = "Delete " + title) },
+            onClick = {
+                deleteNoteFunction()
+                isContextVisible.value = false
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Add new note") },
+            onClick = {
+                addNewNoteFunction()
+                isContextVisible.value = false
+            }
+        )
     }
 }

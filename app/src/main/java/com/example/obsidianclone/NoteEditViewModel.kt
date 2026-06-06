@@ -1,0 +1,107 @@
+package com.example.obsidianclone
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+
+
+class NoteEditModelFactory(
+    private val repository: Repository)
+    : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(NoteEditViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return NoteEditViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")  }}
+
+class NoteEditViewModel(
+    private val repository: Repository
+): ViewModel() {
+    private val _selectedNote = MutableStateFlow<Notes?>(null)
+    val selectedNoteLoaded = MutableStateFlow(false)
+    val _noteAssets = MutableStateFlow<List<NoteAssets>>(emptyList<NoteAssets>())
+    val noteAssets = _noteAssets.asStateFlow()
+
+    val selectedNote: StateFlow<Notes?> = _selectedNote
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+
+    fun retrieveFullNote(id: Int) {
+        viewModelScope.launch {
+            selectedNoteLoaded.value = false
+            val note = repository.retrieveFullNote(id).getOrNull()
+            _selectedNote.value = note
+            selectedNoteLoaded.value = true
+        }
+    }
+
+    private var savingNoteTextJob: Job? = null
+    private var savingNoteTitleJob: Job? = null
+
+    fun updateNoteText(id: Int, text: String) {
+        savingNoteTextJob?.cancel()
+        savingNoteTextJob = viewModelScope.launch {
+            delay(200)
+            repository.updateNoteText(id, text)
+        }
+    }
+
+    fun updateNoteTitle(id: Int, title: String) {
+        savingNoteTitleJob?.cancel()
+        savingNoteTitleJob = viewModelScope.launch {
+            delay(200)
+            repository.updateNoteTitle(id, title)
+        }
+    }
+
+
+    fun retrieveAssetsByType(id: Int, type: Int) {
+        viewModelScope.launch {
+            repository.retrieveNoteAssetsByType(id, type)
+        }
+    }
+
+    fun retrieveNoteAssets(id: Int) {
+        viewModelScope.launch {
+            println("note assets retrieve start")
+            val allAssets = repository.retrieveNoteAssets(id)
+            _noteAssets.value = allAssets.getOrNull() ?: emptyList()
+            println("note assets retrieved")
+        }
+    }
+
+    fun createNoteAsset(noteId: Int, type: Int, link: Uri) {
+        viewModelScope.launch {
+            val asset = NoteAssets(
+                noteId = noteId,
+                contentType = type,
+                link = link,
+            )
+            repository.createNoteAsset(asset)
+            retrieveNoteAssets(noteId)
+        }
+    }
+
+    fun deleteNoteAsset(assetId: Int, noteId: Int) {
+        viewModelScope.launch {
+            repository.deleteNoteAsset(assetId)
+            retrieveNoteAssets(noteId)
+        }
+
+    }
+}

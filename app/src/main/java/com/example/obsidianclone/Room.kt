@@ -1,14 +1,29 @@
 package com.example.obsidianclone
 
 import android.content.Context
+import android.net.Uri
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
+import androidx.room.Upsert
 
+
+object Converters {
+    @TypeConverter
+    @JvmStatic
+    fun fromUri(uri: Uri?): String? = uri?.toString()
+
+    @TypeConverter
+    @JvmStatic
+    fun toUri(value: String?): Uri? = value?.let { Uri.parse(it) }
+}
 
 @Entity
 data class Notes (
@@ -16,6 +31,25 @@ data class Notes (
     val id: Int = 0,
     val title: String = "",
     val text: String = "",
+)
+
+@Entity(
+    foreignKeys = [
+        ForeignKey(
+            entity = Notes::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("noteId"),
+            onUpdate = ForeignKey.CASCADE,
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
+data class NoteAssets (
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val noteId: Int,
+    val contentType: Int,
+    val link: Uri,
 )
 
 data class LightNotes (
@@ -43,10 +77,32 @@ interface NoteDao {
 
     @Query("SELECT * FROM Notes WHERE id = :id")
     suspend fun retrieveFullNote(id: Int): Notes
+
+    @Query("SELECT * FROM NoteAssets WHERE id = :id")
+    suspend fun retrieveAsset(id: Int): NoteAssets
+
+    @Upsert
+    suspend fun writeAsset(asset: NoteAssets)
+
+    @Query("SELECT * FROM NoteAssets WHERE noteId = :id AND contentType = :type")
+    suspend fun retrieveNoteAssetsByType(id: Int, type: Int): List<NoteAssets>
+
+    @Query("SELECT * FROM NoteAssets WHERE noteId = :id")
+    suspend fun retrieveNoteAssets(id: Int): List<NoteAssets>
+
+    @Query("DELETE FROM NoteAssets WHERE id = :assetId")
+    suspend fun deleteAsset(assetId: Int)
 }
 
 
-@Database(entities = [Notes::class], version = 1, exportSchema = false)
+@Database(
+    entities = [Notes::class, NoteAssets::class],
+    version = 1,
+//    autoMigrations = [
+//        AutoMigration(from = 1, to = 2)
+//    ]
+)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun noteDao(): NoteDao
@@ -59,7 +115,7 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "obsidian_clone_db"
+                    "obsidian_db_images"
                 ).build().also { INSTANCE = it }
             }
     }
