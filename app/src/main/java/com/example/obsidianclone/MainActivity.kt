@@ -19,13 +19,16 @@ class MainActivity : ComponentActivity() {
         val myRepository = Repository(myDao)
         val factoryMenu = NoteMenuViewModelFactory(myRepository)
         val factoryEdit = NoteEditModelFactory(myRepository)
+        val factoryGraph = GraphScreenModelFactory(myRepository)
         val viewMenu = ViewModelProvider(this, factoryMenu)[NoteMenuViewModel::class.java]
         val viewEdit = ViewModelProvider(this, factoryEdit)[NoteEditViewModel::class.java]
+        val graphScreen = ViewModelProvider(this, factoryGraph)[GraphScreenViewModel::class.java]
         setContent {
             ObsidianCloneTheme() {
                 Navigation(
                     viewMenu = viewMenu,
                     viewEdit = viewEdit,
+                    graphScreen = graphScreen,
                 )
             }
         }

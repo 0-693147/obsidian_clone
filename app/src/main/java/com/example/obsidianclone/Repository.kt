@@ -2,7 +2,7 @@
 
 
     class Repository(private val noteDao: NoteDao) {
-        suspend fun retrieveFullNote(id: Int): Result<Notes?> =
+        suspend fun retrieveFullNote(id: Int): Result<Note?> =
             try {
                 Result.success(noteDao.retrieveFullNote(id))
             } catch (e: Exception) {
@@ -41,17 +41,17 @@
                 Result.failure(e)
             }
 
-        suspend fun retrieveNoteListLight(): Result<List<Notes>> =
+        suspend fun retrieveNoteListLight(): Result<List<Note>> =
             try {
                 val lightNotes = noteDao.retrieveNoteListLight()?: emptyList()
                 Result.success(lightNotes.map { lightNote ->
-                    Notes(lightNote.id, lightNote.title, "")
+                    Note(lightNote.id, lightNote.title, "")
                 })
             } catch (e: Exception) {
                 Result.failure(e)
             }
 
-        suspend fun retrieveNoteListFull(): Result<List<Notes>> =
+        suspend fun retrieveNoteListFull(): Result<List<Note>> =
             try {
                 val notes = noteDao.retrieveNoteListFull()?: emptyList()
                 Result.success(notes)
@@ -59,7 +59,7 @@
                 Result.failure(e)
             }
 
-        suspend fun retrieveAsset(id: Int): Result<NoteAssets> =
+        suspend fun retrieveAsset(id: Int): Result<NoteAsset> =
             try {
                 val asset = noteDao.retrieveAsset(id)
                 Result.success(asset)
@@ -67,7 +67,7 @@
                 Result.failure(e)
             }
 
-        suspend fun retrieveNoteAssetsByType(id: Int, type: Int): Result<List<NoteAssets>> =
+        suspend fun retrieveNoteAssetsByType(id: Int, type: Int): Result<List<NoteAsset>> =
             try {
                 val assets = noteDao.retrieveNoteAssetsByType(id, type)
                 Result.success(assets)
@@ -75,7 +75,7 @@
                 Result.failure(e)
             }
 
-        suspend fun retrieveNoteAssets(id: Int): Result<List<NoteAssets>> =
+        suspend fun retrieveNoteAssets(id: Int): Result<List<NoteAsset>> =
             try {
                 val allAssets = noteDao.retrieveNoteAssets(id)
                 Result.success(allAssets)
@@ -83,7 +83,7 @@
                 Result.failure(e)
             }
 
-        suspend fun createNoteAsset(asset: NoteAssets): Result<Unit> =
+        suspend fun createNoteAsset(asset: NoteAsset): Result<Unit> =
             try {
                 noteDao.writeAsset(asset)
                 Result.success(Unit)
@@ -93,11 +93,41 @@
 
         suspend fun deleteNoteAsset(assetId: Int): Result<Unit> =
         try {
-            println("123412341 repository: using delete dao")
-            println("asset id " + assetId.toString())
             noteDao.deleteAsset(assetId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
+
+        suspend fun getNodeList(): Result<List<NodeConnection>> =
+        try {
+            val noteConnectionList = noteDao.retrieveNodeConnectionList()
+            Result.success(noteConnectionList)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
+        suspend fun createNodeConnection(thisNoteId: Int, otherNoteId: Int): Result<Unit> =
+            try {
+                noteDao.createNodeConnection(thisNoteId, otherNoteId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun deleteNodeConnection(thisNoteId: Int, otherNoteId: Int): Result<Unit> =
+            try {
+                noteDao.deleteNodeConnection(thisNoteId, otherNoteId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+        suspend fun retrieveConnectionsByNode(thisNoteId: Int): Result<List<NodeConnection>?> =
+            try {
+                val connectionList = noteDao.retrieveNoteConnections(thisNoteId)
+                Result.success(connectionList)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
     }

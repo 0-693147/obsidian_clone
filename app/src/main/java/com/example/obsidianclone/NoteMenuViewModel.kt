@@ -26,8 +26,8 @@ class NoteMenuViewModel(
 ): ViewModel() {
 
     // _notes doesnt have text values to prevent excessive memory usage
-    private val _notes = MutableStateFlow(emptyList<Notes>())
-    val notes: Flow<List<Notes>> = _notes.asStateFlow()
+    private val _notes = MutableStateFlow(emptyList<Note>())
+    val notes: Flow<List<Note>> = _notes.asStateFlow()
 
     fun updateLightNoteList() {
         viewModelScope.launch {
@@ -43,9 +43,9 @@ class NoteMenuViewModel(
         }
     }
 
-    fun createEmptyNote() {
+    fun createEmptyNote(title: String = "New Note") {
         viewModelScope.launch {
-            repository.createEmptyNote()
+            repository.createEmptyNote(title)
             updateLightNoteList()
         }
     }
@@ -55,7 +55,7 @@ class NoteMenuViewModel(
         val highlightRange: List<IntRange>
     )
     data class NoteSearchResult(
-        val ligthNote: Notes,
+        val ligthNote: Note,
         val matches: List<SearchMatch>
     )
 
@@ -74,7 +74,7 @@ class NoteMenuViewModel(
 
     fun searchNotes(query: String, beforeContext: Int = 30, afterContext: Int = 30) {
         viewModelScope.launch {
-            val fullNotes = repository.retrieveNoteListFull().getOrNull() ?: emptyList<Notes>()
+            val fullNotes = repository.retrieveNoteListFull().getOrNull() ?: emptyList<Note>()
 
             if (fullNotes.isNullOrEmpty()) {
                 return@launch
@@ -114,7 +114,7 @@ class NoteMenuViewModel(
                 if (!matches.isEmpty()) {
                     localSearchResults.add(
                         NoteSearchResult(
-                            ligthNote = Notes(note.id, note.title, ""),
+                            ligthNote = Note(note.id, note.title, ""),
                             matches = matches
                         )
                     )

@@ -6,6 +6,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
@@ -26,7 +27,7 @@ object Converters {
 }
 
 @Entity
-data class Notes (
+data class Note (
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val title: String = "",
@@ -36,7 +37,7 @@ data class Notes (
 @Entity(
     foreignKeys = [
         ForeignKey(
-            entity = Notes::class,
+            entity = Note::class,
             parentColumns = arrayOf("id"),
             childColumns = arrayOf("noteId"),
             onUpdate = ForeignKey.CASCADE,
@@ -44,7 +45,7 @@ data class Notes (
         )
     ]
 )
-data class NoteAssets (
+data class NoteAsset (
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val noteId: Int,
@@ -52,7 +53,33 @@ data class NoteAssets (
     val link: Uri,
 )
 
-data class LightNotes (
+@Entity(
+    indices = [Index(value = ["thisNoteId", "otherNoteId"], unique = true)],
+    foreignKeys = [
+        ForeignKey(
+            entity = Note::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("thisNoteId"),
+            onUpdate = ForeignKey.CASCADE,
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey( entity = Note::class,
+        parentColumns = arrayOf("id"),
+        childColumns = arrayOf("otherNoteId"),
+        onUpdate = ForeignKey.CASCADE,
+        onDelete = ForeignKey.CASCADE
+)
+    ]
+)
+data class NodeConnection(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int,
+    val thisNoteId: Int,
+    val otherNoteId: Int,
+)
+
+
+data class LightNote (
     val id: Int = 0,
     val title: String = "",
 )
@@ -60,46 +87,59 @@ data class LightNotes (
 
 @Dao
 interface NoteDao {
-    @Query("INSERT INTO Notes (title, text) VALUES (:title, :text)")
+    @Query("INSERT INTO Note (title, text) VALUES (:title, :text)")
     suspend fun newNote(title: String = "", text: String = "")
 
-    @Query("UPDATE Notes SET title = :title  WHERE id = :id")
+    @Query("UPDATE Note SET title = :title  WHERE id = :id")
     suspend fun updateTitle(id: Int, title: String)
 
-    @Query("UPDATE Notes SET text = :text WHERE id = :id")
+    @Query("UPDATE Note SET text = :text WHERE id = :id")
     suspend fun updateText(id: Int, text: String)
 
-    @Query("DELETE FROM Notes WHERE id = :id")
+    @Query("DELETE FROM Note WHERE id = :id")
     suspend fun deleteNote(id: Int)
 
-    @Query("SELECT id, title, '' FROM Notes")
-    suspend fun retrieveNoteListLight(): List<LightNotes>
+    @Query("SELECT id, title, '' FROM Note")
+    suspend fun retrieveNoteListLight(): List<LightNote>
 
-    @Query("SELECT id, title, text FROM Notes")
-    suspend fun retrieveNoteListFull(): List<Notes>
+    @Query("SELECT id, title, text FROM Note")
+    suspend fun retrieveNoteListFull(): List<Note>
 
-    @Query("SELECT * FROM Notes WHERE id = :id")
-    suspend fun retrieveFullNote(id: Int): Notes
+    @Query("SELECT * FROM Note WHERE id = :id")
+    suspend fun retrieveFullNote(id: Int): Note
 
-    @Query("SELECT * FROM NoteAssets WHERE id = :id")
-    suspend fun retrieveAsset(id: Int): NoteAssets
+    @Query("SELECT * FROM NoteAsset WHERE id = :id")
+    suspend fun retrieveAsset(id: Int): NoteAsset
 
     @Upsert
-    suspend fun writeAsset(asset: NoteAssets)
+    suspend fun writeAsset(asset: NoteAsset)
 
-    @Query("SELECT * FROM NoteAssets WHERE noteId = :id AND contentType = :type")
-    suspend fun retrieveNoteAssetsByType(id: Int, type: Int): List<NoteAssets>
+    @Query("SELECT * FROM NoteAsset WHERE noteId = :id AND contentType = :type")
+    suspend fun retrieveNoteAssetsByType(id: Int, type: Int): List<NoteAsset>
 
-    @Query("SELECT * FROM NoteAssets WHERE noteId = :id")
-    suspend fun retrieveNoteAssets(id: Int): List<NoteAssets>
+    @Query("SELECT * FROM NoteAsset WHERE noteId = :id")
+    suspend fun retrieveNoteAssets(id: Int): List<NoteAsset>
 
-    @Query("DELETE FROM NoteAssets WHERE id = :assetId")
+    @Query("DELETE FROM NoteAsset WHERE id = :assetId")
     suspend fun deleteAsset(assetId: Int)
+
+    @Query("SELECT * FROM NodeConnection")
+    suspend fun retrieveNodeConnectionList(): List<NodeConnection>
+
+    @Query("INSERT INTO NodeConnection (thisNoteId, otherNoteId) VALUES (:thisNoteId, :otherNoteId)")
+    suspend fun createNodeConnection(thisNoteId: Int, otherNoteId: Int)
+
+    @Query("DELETE FROM NodeConnection WHERE thisNoteId = :thisNoteId AND otherNoteId = :otherNoteId")
+    suspend fun deleteNodeConnection(thisNoteId: Int, otherNoteId: Int)
+
+    @Query("SELECT * FROM NodeConnection WHERE thisNoteId = :thisNoteId")
+    suspend fun retrieveNoteConnections(thisNoteId: Int): List<NodeConnection>
 }
 
 
+
 @Database(
-    entities = [Notes::class, NoteAssets::class],
+    entities = [Note::class, NoteAsset::class, NodeConnection::class],
     version = 1,
 //    autoMigrations = [
 //        AutoMigration(from = 1, to = 2)
@@ -118,7 +158,7 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "obsidian_db_images"
+                    "obsidian_db1"
                 ).build().also { INSTANCE = it }
             }
     }

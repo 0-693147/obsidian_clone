@@ -420,7 +420,8 @@ fun NoteEditor(
                             },
                         )
                     }
-
+                    val linkRegex = Regex("""\[\[([^\]]+)]]""")
+                    var linkMatches: List<String>
                     item() {
                         TextField(
                             modifier = Modifier
@@ -432,6 +433,14 @@ fun NoteEditor(
                             ),
                             value = textState.value,
                             onValueChange = { textValue ->
+                                val links = linkRegex.findAll(textValue)
+                                    .map { match ->
+                                        println(match)
+                                        val (link) = match.destructured
+                                        return@map link
+                                    }
+                                    .toList()
+                                view.handleLinks(links)
                                 textState.value = textValue
                                 view.updateNoteText(thisNoteId, textValue)
                             },

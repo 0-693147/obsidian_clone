@@ -38,9 +38,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
+import com.example.obsidianclone.GraphScreenRoute
+import com.example.obsidianclone.Note
 import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteRoute
-import com.example.obsidianclone.Notes
 import com.example.obsidianclone.R
 import com.example.obsidianclone.SearchScreenRoute
 import com.example.obsidianclone.SettingsScreenRoute
@@ -64,7 +65,7 @@ import com.example.obsidianclone.SettingsScreenRoute
 
     Scaffold(
         topBar = {TopBar("/path", navController)},
-        bottomBar = {BottomBar(view, navController)},
+        bottomBar = {BottomBar(view, navController, noteListState)},
         modifier = Modifier
             .fillMaxSize()
             .background(color = Colors.backgroundColor)
@@ -127,6 +128,7 @@ private fun TopBar(
 private fun BottomBar(
     view: NoteMenuViewModel,
     navController: NavController,
+    noteList: List<Note>
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -155,7 +157,23 @@ private fun BottomBar(
             item {
                 IconButton(
                     onClick = {
-                        view.createEmptyNote()
+                        var title = "New Note"
+                        var titleCollision = true
+                        var i = 0
+                        while (titleCollision) {
+                            i++
+                            titleCollision = false
+                            noteList.forEach { note ->
+                                println(note.title)
+                                println(title)
+                                println(1)
+                                if (note.title == title) {
+                                    titleCollision = true
+                                    title = "New Note ($i)"
+                                }
+                            }
+                        }
+                        view.createEmptyNote(title)
                     }
                 ) {
                     Icon(
@@ -167,7 +185,9 @@ private fun BottomBar(
             }
             item {
                 IconButton(
-                    onClick = {}
+                    onClick = {
+                        navController.navigate(GraphScreenRoute)
+                    }
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.graph_icon),
@@ -184,7 +204,7 @@ private fun BottomBar(
 fun NoteList(
     navController: NavController,
     view: NoteMenuViewModel,
-    noteList: List<Notes>
+    noteList: List<Note>
 ) {
     LazyColumn(
         modifier = Modifier
@@ -214,8 +234,8 @@ fun NoteList(
                 Text(text = note.title, color = Color.White)
                 ContextMenu(
                     isContextVisible = isContextVisible,
-                    deleteNoteFunction = {view.deleteNote(note.id)},
-                    addNewNoteFunction = {view.createEmptyNote()},
+                    deleteNoteFunction = { view.deleteNote(note.id) },
+                    addNewNoteFunction = { view.createEmptyNote() },
                     title = note.title
                 )
             }

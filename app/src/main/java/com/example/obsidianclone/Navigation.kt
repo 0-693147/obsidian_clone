@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.obsidianclone.screens.GraphScreen
 import com.example.obsidianclone.screens.NoteEditor
 import com.example.obsidianclone.screens.NoteMenu
 import com.example.obsidianclone.screens.SearchScreen
@@ -33,12 +34,16 @@ object SettingsScreenRoute
 @Serializable
 object SearchScreenRoute
 
+@Serializable
+object GraphScreenRoute
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(
     navController: NavHostController = rememberNavController(),
     viewMenu: NoteMenuViewModel,
-    viewEdit: NoteEditViewModel
+    viewEdit: NoteEditViewModel,
+    graphScreen: GraphScreenViewModel,
 ) {
     NavHost(
         navController = navController,
@@ -56,6 +61,9 @@ fun Navigation(
         }
         composable<SearchScreenRoute>{
             SearchScreen(viewMenu, navController)
+        }
+        composable<GraphScreenRoute>{
+            GraphScreen(graphScreen, navController)
         }
     }
 }

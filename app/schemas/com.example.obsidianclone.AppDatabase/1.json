@@ -2,10 +2,10 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "2e1b37ad6249bbc2d71de835cdb36118",
+    "identityHash": "2d1a85fcf81115c9c748bfba4f2c93a8",
     "entities": [
       {
-        "tableName": "Notes",
+        "tableName": "Note",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `text` TEXT NOT NULL)",
         "fields": [
           {
@@ -35,8 +35,8 @@
         }
       },
       {
-        "tableName": "NoteAssets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `noteId` INTEGER NOT NULL, `contentType` INTEGER NOT NULL, `link` TEXT NOT NULL, FOREIGN KEY(`noteId`) REFERENCES `Notes`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "tableName": "NoteAsset",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `noteId` INTEGER NOT NULL, `contentType` INTEGER NOT NULL, `link` TEXT NOT NULL, FOREIGN KEY(`noteId`) REFERENCES `Note`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -71,7 +71,7 @@
         },
         "foreignKeys": [
           {
-            "table": "Notes",
+            "table": "Note",
             "onDelete": "CASCADE",
             "onUpdate": "CASCADE",
             "columns": [
@@ -82,11 +82,77 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "NodeConnection",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `thisNoteId` INTEGER NOT NULL, `otherNoteId` INTEGER NOT NULL, FOREIGN KEY(`thisNoteId`) REFERENCES `Note`(`id`) ON UPDATE CASCADE ON DELETE CASCADE , FOREIGN KEY(`otherNoteId`) REFERENCES `Note`(`id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thisNoteId",
+            "columnName": "thisNoteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "otherNoteId",
+            "columnName": "otherNoteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_NodeConnection_thisNoteId_otherNoteId",
+            "unique": true,
+            "columnNames": [
+              "thisNoteId",
+              "otherNoteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_NodeConnection_thisNoteId_otherNoteId` ON `${TABLE_NAME}` (`thisNoteId`, `otherNoteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Note",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "thisNoteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "Note",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "otherNoteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2e1b37ad6249bbc2d71de835cdb36118')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2d1a85fcf81115c9c748bfba4f2c93a8')"
     ]
   }
 }
