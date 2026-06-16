@@ -45,8 +45,8 @@ import com.example.obsidianclone.NoteRoute
 import com.example.obsidianclone.R
 import com.example.obsidianclone.SearchScreenRoute
 import com.example.obsidianclone.SettingsScreenRoute
-
-
+import androidx.compose.foundation.layout.size
+import com.example.obsidianclone.DirectoryScreenRoute
 //@Preview
 //@Composable
 //private fun Preview() {
@@ -97,6 +97,26 @@ private fun TopBar(
             .background(color = Colors.backgroundColor)
     ) {
         Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            IconButton(
+                onClick = {
+                    navControler.navigate(DirectoryScreenRoute)
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.outline_folder_24  ),
+                    contentDescription = "Folder Icon",
+                    tint = Colors.textColor,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,8 +124,10 @@ private fun TopBar(
         ) {
             Text(text = path, color = Color.White)
         }
+
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(8.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
@@ -116,7 +138,7 @@ private fun TopBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.settings_icon),
-                    contentDescription = "Graph Icon",
+                    contentDescription = "Settings Icon",
                     tint = Colors.textColor
                 )
             }
