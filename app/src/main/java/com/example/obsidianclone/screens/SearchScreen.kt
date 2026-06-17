@@ -1,6 +1,7 @@
 package com.example.obsidianclone.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -48,6 +49,7 @@ import com.example.obsidianclone.Colors
 import com.example.obsidianclone.NoteMenuRoute
 import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteMenuViewModel.NoteSearchResult
+import com.example.obsidianclone.NoteRoute
 import com.example.obsidianclone.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,7 +123,7 @@ fun SearchScreen(
                 shadowElevation = SearchBarDefaults.ShadowElevation,
                 windowInsets = SearchBarDefaults.windowInsets,
                 content = {
-                    SearchResults(view, searchResults)
+                    SearchResults(navController, searchResults)
                 },
             )
         }
@@ -130,7 +132,7 @@ fun SearchScreen(
 
 @Composable
 private fun SearchResults(
-    view: NoteMenuViewModel,
+    navController: NavController,
     searchResults: List<NoteSearchResult>
 ) {
     LazyColumn() {
@@ -155,6 +157,11 @@ private fun SearchResults(
                     .padding(8.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(color = Colors.panelColor)
+                    .clickable(
+                        onClick = {
+                            navController.navigate( route = NoteRoute(note.id))
+                        }
+                    )
             ) {
                 item {
                     Box(

@@ -58,7 +58,7 @@ fun Navigation(
             NoteEditor(navController, view = viewEdit, thisNoteId = gotoNote.id)
         }
         composable<SettingsScreenRoute>{
-            SettingsScreen()
+            SettingsScreen(navController)
         }
         composable<SearchScreenRoute>{
             SearchScreen(viewMenu, navController)

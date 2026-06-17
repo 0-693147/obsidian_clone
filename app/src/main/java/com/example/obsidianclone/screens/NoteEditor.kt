@@ -4,7 +4,6 @@ import android.Manifest
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -143,7 +142,6 @@ fun NoteEditor(
         imagesDir.mkdirs()
         println(imagesDir)
 
-//        val imagePickerLauncher =
 
         @Composable
         fun addAssetButton(assetType: String, onDismissRequest: () -> Unit) {
@@ -151,6 +149,8 @@ fun NoteEditor(
                 contract =
                     ActivityResultContracts.GetContent()
             ) { uri: Uri? ->
+                println("uri")
+                println(uri)
                 uri?.let {
                     val ts = LocalDateTime.now()
                     val fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmssnnnnnnnnn")
@@ -173,33 +173,13 @@ fun NoteEditor(
                 modifier = Modifier
                     .background(color = Color.Transparent),
                 onClick = {
+                    println("asset adding start")
                     launcher.launch(assetType + "/*")
-                    onDismissRequest()
+                    println("asset adding end")
+//                    onDismissRequest()
                 }
             ) {
                 Text(assetType)
-            }
-        }
-
-        val imagePickerLauncher = rememberLauncherForActivityResult(contract =
-            ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                val ts = LocalDateTime.now()
-                val fmt = DateTimeFormatter.ofPattern("yyyyMMddHHmmssnnnnnnnnn")
-                val filename = ts.format(fmt)
-                println(ts.format(fmt))
-                val file = File(imagesDir, filename)
-                val content = context.contentResolver.openInputStream(uri)?.use {
-                    it.buffered().readBytes()
-                }
-                file.outputStream().use { out ->
-                    out.write(content)
-                }
-                view.createNoteAsset(
-                    noteId = thisNoteId,
-                    type = assetTypeIndices.getValue("image"),
-                    link = file.toUri()
-                )
             }
         }
 
@@ -211,7 +191,6 @@ fun NoteEditor(
             topBar = { NoteTitleBar(thisNoteId, titleState, view) },
             bottomBar = { BottomBar(
                 navController,
-                imagePickerLauncher,
                 showChooseAssetTypeDialog
             ) }
         ) { innerPadding ->
@@ -279,6 +258,8 @@ fun NoteEditor(
 
                     items(images) { image ->
                         val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
+                        println("1              images")
+                        println(image)
                         MissingPermissionsComponent(
                             permissions = listOf(
                                 Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -504,14 +485,13 @@ private fun NoteTitleBar (
 @Composable
 private fun BottomBar(
     navController: NavController,
-    launcher: ActivityResultLauncher<String>,
     isChooseAssetTypeDialogVisible: MutableState<Boolean>
 ) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .background(color = Colors.backgroundColor)
-            .padding(36.dp)
+            .padding(18.dp)
             .fillMaxWidth(),
     ) {
         LazyRow(
@@ -538,7 +518,6 @@ private fun BottomBar(
                         .zIndex(1f)
                     ,
                     onClick = {
-//                        launcher.launch("image/*")
                         isChooseAssetTypeDialogVisible.value = true
                     }
                 ) {

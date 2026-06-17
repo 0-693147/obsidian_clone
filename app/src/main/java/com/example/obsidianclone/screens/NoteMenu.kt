@@ -47,15 +47,7 @@ import com.example.obsidianclone.SearchScreenRoute
 import com.example.obsidianclone.SettingsScreenRoute
 import androidx.compose.foundation.layout.size
 import com.example.obsidianclone.DirectoryScreenRoute
-//@Preview
-//@Composable
-//private fun Preview() {
-//    val view = ViewModelProvider(this, factory)[NoteViewModel::class.java]
-//    NotesScreen(
-//        navController = rememberNavController(),
-//        viewModel = view
-//    )
-//}
+
 @Composable fun NoteMenu(
     navController: NavController,
     view: NoteMenuViewModel,
@@ -124,10 +116,8 @@ private fun TopBar(
         ) {
             Text(text = path, color = Color.White)
         }
-
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
                 .padding(8.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
@@ -138,7 +128,7 @@ private fun TopBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.settings_icon),
-                    contentDescription = "Settings Icon",
+                    contentDescription = "Graph Icon",
                     tint = Colors.textColor
                 )
             }

@@ -29,16 +29,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
+import com.example.obsidianclone.NoteMenuRoute
 import com.example.obsidianclone.R
 
 
-@Preview
 @Composable
-fun SettingsScreen () {
+fun SettingsScreen (
+    navController: NavController,
+) {
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -60,7 +62,7 @@ fun SettingsScreen () {
                 )
             }
         },
-        bottomBar = {BottomBar()}
+        bottomBar = {BottomBar(navController)}
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -123,13 +125,14 @@ fun SettingsScreen () {
 
 @Composable
 private fun BottomBar(
+    navController: NavController,
 ) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .background(color = Colors.backgroundColor)
-            .padding(36.dp)
-            .fillMaxWidth()
+            .padding(18.dp)
+            .fillMaxWidth(),
     ) {
         LazyRow(
             modifier = Modifier,
@@ -138,9 +141,9 @@ private fun BottomBar(
             item() {
                 IconButton(
                     onClick = {
-//                        navController.navigate(NoteMenuRoute) {
-//                            popUpTo(NoteMenuRoute)
-//                        }
+                        navController.navigate(NoteMenuRoute) {
+                            popUpTo(NoteMenuRoute)
+                        }
                     }
                 ) {
                     Icon(

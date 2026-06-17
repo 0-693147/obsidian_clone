@@ -91,6 +91,8 @@ class NoteEditViewModel(
                 contentType = type,
                 link = link,
             )
+            println("create note asset view")
+            println(asset)
             repository.createNoteAsset(asset)
             retrieveNoteAssets(noteId)
         }
