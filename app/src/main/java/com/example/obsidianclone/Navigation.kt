@@ -14,7 +14,7 @@ import com.example.obsidianclone.screens.NoteMenu
 import com.example.obsidianclone.screens.SearchScreen
 import com.example.obsidianclone.screens.SettingsScreen
 import kotlinx.serialization.Serializable
-
+import com.example.obsidianclone.screens.DirectoryScreen
 
 //sealed class Routes(val route: String) {
 //    data object NotesScreen: Routes("NotesScreen")
@@ -36,7 +36,8 @@ object SearchScreenRoute
 
 @Serializable
 object GraphScreenRoute
-
+@Serializable
+object DirectoryScreenRoute
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(
@@ -64,6 +65,9 @@ fun Navigation(
         }
         composable<GraphScreenRoute>{
             GraphScreen(graphScreen, navController)
+        }
+        composable<DirectoryScreenRoute>{
+            DirectoryScreen(navController)
         }
     }
 }
