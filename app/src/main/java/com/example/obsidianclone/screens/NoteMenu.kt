@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
+import com.example.obsidianclone.DirectoryScreenRoute
 import com.example.obsidianclone.GraphScreenRoute
 import com.example.obsidianclone.Note
 import com.example.obsidianclone.NoteMenuViewModel
@@ -45,8 +48,6 @@ import com.example.obsidianclone.NoteRoute
 import com.example.obsidianclone.R
 import com.example.obsidianclone.SearchScreenRoute
 import com.example.obsidianclone.SettingsScreenRoute
-import androidx.compose.foundation.layout.size
-import com.example.obsidianclone.DirectoryScreenRoute
 
 @Composable fun NoteMenu(
     navController: NavController,
@@ -225,25 +226,27 @@ fun NoteList(
     ) {
         items(noteList) { note ->
             var isContextVisible = remember { mutableStateOf(false) }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(color = Colors.panelColor)
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .pointerInput(true) {
-                        detectTapGestures(
-                            onLongPress = {
-                                isContextVisible.value = true
-                            },
-                            onTap = {
-                                println(note)
-                                navController.navigate( route = NoteRoute(note.id))
-                            }
-                        )
-                    }
-            ) {
-                Text(text = note.title, color = Color.White)
+            Column() {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(color = Colors.panelColor)
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .pointerInput(true) {
+                            detectTapGestures(
+                                onLongPress = {
+                                    isContextVisible.value = true
+                                },
+                                onTap = {
+                                    println(note)
+                                    navController.navigate(route = NoteRoute(note.id))
+                                }
+                            )
+                        }
+                ) {
+                    Text(text = note.title, color = Color.White)
+                }
                 ContextMenu(
                     isContextVisible = isContextVisible,
                     deleteNoteFunction = { view.deleteNote(note.id) },

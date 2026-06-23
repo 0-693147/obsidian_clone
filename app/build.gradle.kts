@@ -7,6 +7,10 @@ plugins {
 //    alias(libs.plugins.hilt)
 }
 
+//repositories {
+//    mavenCentral()
+//}
+
 android {
     namespace = "com.example.obsidianclone"
     compileSdk {
@@ -93,7 +97,9 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.10.1")
     implementation("androidx.media3:media3-ui-compose-material3:1.10.1")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
+//    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 //    val waveform_version = "1.1.1"
 //    implementation("com.github.lincollincol:compose-audiowaveform:$waveform_version")
 }

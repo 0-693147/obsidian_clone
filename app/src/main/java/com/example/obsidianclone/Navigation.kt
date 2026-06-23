@@ -8,13 +8,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.obsidianclone.screens.DirectoryScreen
 import com.example.obsidianclone.screens.GraphScreen
 import com.example.obsidianclone.screens.NoteEditor
 import com.example.obsidianclone.screens.NoteMenu
 import com.example.obsidianclone.screens.SearchScreen
 import com.example.obsidianclone.screens.SettingsScreen
 import kotlinx.serialization.Serializable
-import com.example.obsidianclone.screens.DirectoryScreen
 
 //sealed class Routes(val route: String) {
 //    data object NotesScreen: Routes("NotesScreen")
@@ -44,7 +44,8 @@ fun Navigation(
     navController: NavHostController = rememberNavController(),
     viewMenu: NoteMenuViewModel,
     viewEdit: NoteEditViewModel,
-    graphScreen: GraphScreenViewModel,
+    viewGraph: GraphScreenViewModel,
+    viewDirectory: DirectoryScreenViewModel
 ) {
     NavHost(
         navController = navController,
@@ -64,10 +65,10 @@ fun Navigation(
             SearchScreen(viewMenu, navController)
         }
         composable<GraphScreenRoute>{
-            GraphScreen(graphScreen, navController)
+            GraphScreen(viewGraph, navController)
         }
         composable<DirectoryScreenRoute>{
-            DirectoryScreen(navController)
+            DirectoryScreen(viewDirectory, navController)
         }
     }
 }

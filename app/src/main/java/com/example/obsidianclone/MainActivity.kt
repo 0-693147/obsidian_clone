@@ -20,15 +20,18 @@ class MainActivity : ComponentActivity() {
         val factoryMenu = NoteMenuViewModelFactory(myRepository)
         val factoryEdit = NoteEditModelFactory(myRepository)
         val factoryGraph = GraphScreenModelFactory(myRepository)
+        val factoryDirectory = DirectoryScreenViewModelFactory(myRepository)
         val viewMenu = ViewModelProvider(this, factoryMenu)[NoteMenuViewModel::class.java]
         val viewEdit = ViewModelProvider(this, factoryEdit)[NoteEditViewModel::class.java]
-        val graphScreen = ViewModelProvider(this, factoryGraph)[GraphScreenViewModel::class.java]
+        val viewGraph = ViewModelProvider(this, factoryGraph)[GraphScreenViewModel::class.java]
+        val viewDirectory = ViewModelProvider(this, factoryDirectory)[DirectoryScreenViewModel::class.java]
         setContent {
             ObsidianCloneTheme() {
                 Navigation(
                     viewMenu = viewMenu,
                     viewEdit = viewEdit,
-                    graphScreen = graphScreen,
+                    viewGraph = viewGraph,
+                    viewDirectory = viewDirectory
                 )
             }
         }
