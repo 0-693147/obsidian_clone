@@ -7,6 +7,7 @@ This is a clone of the Obsidian android app with limited functionality made for 
 - Create, store and edit notes
 - Add images, video and audio files
 - A directory hierarchy for note grouping
+- Search accross different notes
 - Graph view for visualization
 
 ## Technologies
@@ -15,6 +16,11 @@ This is a clone of the Obsidian android app with limited functionality made for 
 - Framework: Jetpack Compose
 - Architecture: MVVM (6 Screens, 5 ViewModels, 1 Repository, 1 Database)
 - Database: Room (SQLite)
+
+## Application Flowchart
+
+<img src="./assets/obsidian_clone_flowchart.svg">
+
 
 ## ViewModels
 
@@ -112,6 +118,9 @@ The single data layer for the app, bridging together the ViewModels with the Roo
 - **Graph** — managing inter-note connections (`NodeConnection`), including creation, deletion, and retrieval by node
 
 ## Database
+
+<img src="./assets/obsidian_database.svg">
+
 Built with **Room**, the database (`obsidian_db2`) consists of four tables and a type converter for `Uri` serialization.
 
 ### Entities
@@ -129,3 +138,8 @@ Built with **Room**, the database (`obsidian_db2`) consists of four tables and a
 ### Other
 - **`Converters`** — a `@TypeConverter` pair that serializes `Uri` to `String` and back, required for storing asset links in Room
 - **`AppDatabase`** — singleton Room database instance, exposing `NoteDao`
+
+
+## Initial Design
+
+<img src="./assets/obsidian_initial_design.svg">
