@@ -1,16 +1,20 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.obsidianclone.screens
 
-import android.Manifest
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
@@ -18,31 +22,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,42 +63,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.obsidianclone.Colors
+import com.example.obsidianclone.LightNote
+import com.example.obsidianclone.NoteAsset
 import com.example.obsidianclone.NoteEditViewModel
 import com.example.obsidianclone.NoteMenuRoute
 import com.example.obsidianclone.R
+import com.example.obsidianclone.SettingsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-
-//@Preview
-//@Composable
-//private fun Preview() {
-//    NoteEditor ( navConvroller = rememberNavController() )
-//}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NoteEditor(
     navController: NavController,
     view: NoteEditViewModel,
+    viewSettings: SettingsViewModel,
     thisNoteId: Int
 ) {
     LaunchedEffect(thisNoteId) {
@@ -108,12 +123,6 @@ fun NoteEditor(
     val videos = thisNoteAssets.filter{ asset ->
         asset.contentType == assetTypeIndices["video"]
     }
-    println("Images:")
-    println(images)
-    println("Audios:")
-    println(images)
-    println("Videos:")
-    println(images)
 
     if (thisNoteLoaded == false) {
         Box(
@@ -131,7 +140,7 @@ fun NoteEditor(
         val initialTitle = remember(thisNote) {
             thisNote?.title ?: ""
         }
-        var textState = remember { mutableStateOf(initialText) }
+        var textState = remember { mutableStateOf(TextFieldValue(initialText)) }
         var titleState = remember { mutableStateOf(initialTitle) }
         val context = LocalContext.current
 
@@ -190,6 +199,7 @@ fun NoteEditor(
                 .windowInsetsPadding(WindowInsets.systemBars),
             topBar = { NoteTitleBar(thisNoteId, titleState, view) },
             bottomBar = { BottomBar(
+                view,
                 navController,
                 showChooseAssetTypeDialog
             ) }
@@ -197,51 +207,51 @@ fun NoteEditor(
             Box() {
 
                 if (showChooseAssetTypeDialog.value) {
-                    Dialog(
+                    AlertDialog(
                         onDismissRequest = { showChooseAssetTypeDialog.value = false },
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                Text(
-                                    modifier = Modifier
-                                        .padding(16.dp),
-                                    text = "Choose file type",
-                                    textAlign = TextAlign.Center,
-                                )
-                                HorizontalDivider()
-                                addAssetButton(
-                                    "image",
-                                    { showChooseAssetTypeDialog.value = false }
-                                )
-                                addAssetButton(
-                                    "audio",
-                                    { showChooseAssetTypeDialog.value = false }
-                                )
-                                addAssetButton(
-                                    "video",
-                                    { showChooseAssetTypeDialog.value = false }
-                                )
-                                Button(
-                                    modifier = Modifier
-                                        .padding(16.dp),
-                                    onClick = { showChooseAssetTypeDialog.value = false }
-                                ) {
-                                    Text(text = "Dismiss")
-                                }
+                        containerColor = Colors.panelColor,
+                        title = { Text("Add attachment", color = Colors.textColor) },
+                        text = {
+                            Column {
+                                addAssetButton("image") { showChooseAssetTypeDialog.value = false }
+                                addAssetButton("audio") { showChooseAssetTypeDialog.value = false }
+                                addAssetButton("video") { showChooseAssetTypeDialog.value = false }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showChooseAssetTypeDialog.value = false }) {
+                                Text("Cancel", color = Colors.highlightTextColor)
                             }
                         }
-                    }
+                    )
                 }
+
+
+
+                val current: TextFieldValue = textState.value
+                val cursor: Int = current.selection.start  // where the cursor is in the string
+                val text: String = current.text            // the full string
+
+
+                if (view.isNoteLinkPickerVisible.value) NoteLinkPicker(
+                    view = view,
+                    onDismiss = { view.isNoteLinkPickerVisible.value = false},
+                    onNoteSelected = { note ->
+                        val link = "[[${note.title}]]"
+                        val current = textState.value
+                        val cursor = current.selection.start
+                        val newText =
+                            current.text.substring(0, cursor) + link + current.text.substring(
+                                cursor
+                            )
+                        textState.value = TextFieldValue(
+                            text = newText,
+                            selection = TextRange(cursor + link.length)
+                        )
+                        view.updateNoteText(thisNoteId, newText)
+                        view.isNoteLinkPickerVisible.value = false
+                    }
+                )
 
                 LazyColumn(
                     modifier = Modifier
@@ -257,164 +267,53 @@ fun NoteEditor(
                     }
 
                     items(images) { image ->
-                        val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
-                        println("1              images")
-                        println(image)
-                        MissingPermissionsComponent(
-                            permissions = listOf(
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                            ),
-                            permissionText = "To view images, grant storage permissions",
-                            content = {
-                                AsyncImage(
-                                    model = image.link,
-                                    contentDescription = "image",
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .pointerInput(Unit) {
-                                            detectTapGestures(onLongPress = {
-                                                isDeleteAssetContextMenuVisible.value = true
-                                            }
-                                            )
-                                        }
-                                )
-                                ContextMenu(
-                                    isContextVisible = isDeleteAssetContextMenuVisible,
-                                    deleteImageCallback = {
-                                        view.deleteNoteAsset(image.id, thisNoteId)
-                                    },
-                                    text = "Delete Image"
-                                )
-                            },
-                        )
+                        AssetItem(onDelete = { view.deleteNoteAsset(image.id, thisNoteId) }) {
+                            AsyncImage(
+                                model = image.link,
+                                contentDescription = "image",
+                                modifier = Modifier.padding(8.dp).clip(RoundedCornerShape(8.dp))
+                            )
+                        }
                     }
 
                     items(videos) { video ->
-                        val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
-                        MissingPermissionsComponent(
-                            permissions = listOf(
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                            ),
-                            permissionText = "To view images, grant storage permissions",
-                            content = {
-                                Column(
-                                ) {
-                                    val exoPlayer = ExoPlayer.Builder(context).build()
-                                    val mediaItem = MediaItem.fromUri(video.link)
-                                    exoPlayer.setMediaItem(mediaItem)
-                                    exoPlayer.prepare()
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp)
-                                            .padding(8.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .pointerInput(Unit) {
-                                                detectTapGestures(onLongPress = {
-                                                    isDeleteAssetContextMenuVisible.value = true
-                                                }
-                                                )
-                                            }
-                                    ) {
-                                        AndroidView(
-
-                                            factory = { ctx ->
-                                                PlayerView(
-                                                    ctx,
-                                                ).apply {
-                                                    player = exoPlayer
-                                                    setOnLongClickListener {
-                                                        isDeleteAssetContextMenuVisible.value = true
-                                                        true
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    }
-
-                                    ContextMenu(
-                                        isContextVisible = isDeleteAssetContextMenuVisible,
-                                        deleteImageCallback = {
-                                            view.deleteNoteAsset(video.id, thisNoteId)
-                                        },
-                                        text = "Delete Video"
-                                    )
-                                }
-                            },
-                        )
+                        AssetItem(onDelete = { view.deleteNoteAsset(video.id, thisNoteId) }) {
+                            VideoAsset(video, context)
+                        }
                     }
 
                     items(audios) { audio ->
-                        val isDeleteAssetContextMenuVisible = remember { mutableStateOf(false) }
-                        MissingPermissionsComponent(
-                            permissions = listOf(
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                            ),
-                            permissionText = "To view images, grant storage permissions",
-                            content = {
-                                Column(
-                                ) {
-                                    val exoPlayer = ExoPlayer.Builder(context).build()
-                                    val mediaItem = MediaItem.fromUri(audio.link)
-                                    exoPlayer.setMediaItem(mediaItem)
-                                    exoPlayer.prepare()
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(80.dp)
-                                            .padding(8.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .pointerInput(Unit) {
-                                                detectTapGestures(onLongPress = {
-                                                    isDeleteAssetContextMenuVisible.value = true
-                                                }
-                                                )
-                                            }
-                                    ) {
-                                        AndroidView(
-
-                                            factory = { ctx ->
-                                                PlayerView(
-                                                    ctx,
-                                                ).apply {
-                                                    player = exoPlayer
-                                                    setOnLongClickListener {
-                                                        isDeleteAssetContextMenuVisible.value = true
-                                                        true
-                                                    }
-                                                }
-                                            },
-                                        )
-                                    }
-
-                                    ContextMenu(
-                                        isContextVisible = isDeleteAssetContextMenuVisible,
-                                        deleteImageCallback = {
-                                            view.deleteNoteAsset(audio.id, thisNoteId)
-                                        },
-                                        text = "Delete Audio"
-                                    )
-                                }
-                            },
-                        )
+                        AssetItem(onDelete = { view.deleteNoteAsset(audio.id, thisNoteId) }) {
+                            AudioAsset(audio, context)
+                        }
                     }
+
                     val linkRegex = Regex("""\[\[([^\]]+)]]""")
                     var linkMatches: List<String>
+
+
+
                     item() {
+                        val font by viewSettings.font.collectAsStateWithLifecycle()
+                        val fontFamily = when (font) {
+                            "Monospace" -> FontFamily.Monospace
+                            "Serif" -> FontFamily.Serif
+                            "Sans-serif" -> FontFamily.SansSerif
+                            else -> FontFamily.Default
+                        }
+                        val fontSize by viewSettings.fontSize.collectAsStateWithLifecycle()
+
                         TextField(
                             modifier = Modifier
-                                .background(color = Colors.backgroundColor)
-                                .defaultMinSize(minHeight = 200.dp)
-                            ,
+                                .fillMaxWidth()
+                                .defaultMinSize(minHeight = 200.dp),
                             textStyle = TextStyle(
-                                fontSize = 4.em
+                                fontSize = fontSize.sp,
+                                fontFamily = fontFamily
                             ),
                             value = textState.value,
                             onValueChange = { textValue ->
-                                val links = linkRegex.findAll(textValue)
+                                val links = linkRegex.findAll(textValue.text)
                                     .map { match ->
                                         println(match)
                                         val (link) = match.destructured
@@ -423,17 +322,20 @@ fun NoteEditor(
                                     .toList()
                                 view.handleLinks(links)
                                 textState.value = textValue
-                                view.updateNoteText(thisNoteId, textValue)
+                                view.updateNoteText(thisNoteId, textValue.text)
                             },
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Colors.backgroundColor,
                                 unfocusedContainerColor = Colors.backgroundColor,
-                                unfocusedTextColor = Colors.textColor,
-                                focusedTextColor = Colors.textColor,
+//                                unfocusedTextColor = Colors.textColor,
+//                                focusedTextColor = Colors.textColor,
                                 focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            )
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
                         )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(1000.dp))
                     }
                 }
             }
@@ -441,6 +343,160 @@ fun NoteEditor(
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
+@Composable
+fun AssetItem(
+    onDelete: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val isDeleteVisible = remember { mutableStateOf(false) }
+    Column {
+        Box(
+            modifier = Modifier
+                .pointerInput(Unit) {
+                    detectTapGestures(onLongPress = {
+                        isDeleteVisible.value = true
+                    })
+                }
+        ) {
+            content()
+        }
+        ContextMenu(
+            isContextVisible = isDeleteVisible,
+            deleteImageCallback = onDelete,
+            text = "Delete"
+        )
+    }
+}
+
+@androidx.annotation.OptIn(UnstableApi::class)
+@Composable
+fun VideoAsset(video: NoteAsset, context: Context) {
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(video.link))
+            prepare()
+        }
+    }
+    DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+
+    AndroidView(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(8.dp)
+            .clip(RoundedCornerShape(8.dp)),
+        factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer } }
+    )
+}
+
+//@OptIn(UnstableApi::class)
+@ExperimentalMaterial3Api
+@androidx.annotation.OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun AudioAsset(audio: NoteAsset, context: Context) {
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(audio.link))
+            prepare()
+        }
+    }
+    DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+
+    var isPlaying by remember { mutableStateOf(false) }
+    var progress by remember { mutableFloatStateOf(0f) }
+    var duration by remember { mutableLongStateOf(0L) }
+
+    // update progress every frame while playing
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            progress = if (exoPlayer.duration > 0)
+                exoPlayer.currentPosition.toFloat() / exoPlayer.duration
+            else 0f
+            duration = exoPlayer.duration
+            delay(200)
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = {
+            if (isPlaying) {
+                exoPlayer.pause()
+                isPlaying = false
+            } else {
+                exoPlayer.play()
+                isPlaying = true
+            }
+        }) {
+            Icon(
+                painter = painterResource(
+                if (isPlaying) R.drawable.play_circle_24dp_e3e3e3_fill0_wght400_grad0_opsz24
+                    else R.drawable.pause_circle_24dp_e3e3e3_fill0_wght400_grad0_opsz24,
+                ),
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Slider(
+            value = progress,
+            thumb = {
+                Box(
+                    Modifier
+                        .size(20.dp)
+//                        .padding(4.dp)
+                        .background(Color.White, CircleShape)
+                )
+            },
+            track = {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .background(MaterialTheme.colorScheme.surface)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = progress)
+                            .height(5.dp)
+                            .background(Color.White)
+                    )
+                }
+            },
+            onValueChange = { newProgress ->
+                exoPlayer.seekTo((newProgress * exoPlayer.duration).toLong())
+                progress = newProgress
+            },
+//                MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .weight(1f)
+                .background(color = MaterialTheme.colorScheme.background)
+        )
+
+        Text(
+            text = formatDuration(duration - (duration * progress).toLong()),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+fun formatDuration(ms: Long): String {
+    if (ms <= 0) return "0:00"
+    val seconds = (ms / 1000) % 60
+    val minutes = (ms / 1000) / 60
+    return "$minutes:${seconds.toString().padStart(2, '0')}"
+}
 
 @Composable
 private fun NoteTitleBar (
@@ -484,8 +540,9 @@ private fun NoteTitleBar (
 
 @Composable
 private fun BottomBar(
+    view: NoteEditViewModel,
     navController: NavController,
-    isChooseAssetTypeDialogVisible: MutableState<Boolean>
+    isChooseAssetTypeDialogVisible: MutableState<Boolean>,
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -494,15 +551,32 @@ private fun BottomBar(
             .padding(18.dp)
             .fillMaxWidth(),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+        }
         LazyRow(
             modifier = Modifier,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            item {
+                IconButton(
+                    onClick = { view.isNoteLinkPickerVisible.value = true
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.add_link_24dp_e3e3e3_fill0_wght400_grad0_opsz24),
+                        contentDescription = "Insert link",
+                        tint = Colors.textColor
+                    )
+                }
+            }
             item() {
                 IconButton(
-                    onClick = { navController.navigate(NoteMenuRoute) {
-                        popUpTo(NoteMenuRoute)
-                    }
+                    onClick = {
+                        val directoryId = view.selectedNote.value?.directoryId
+                        if (directoryId != null) { navController.navigate(NoteMenuRoute(directoryId = directoryId))
+                        }
                     }
                 ) {
                     Icon(
@@ -553,25 +627,58 @@ private fun ContextMenu(
 }
 
 
+@Composable
+fun NoteLinkPicker(
+    view: NoteEditViewModel,
+    onDismiss: () -> Unit,
+    onNoteSelected: (LightNote) -> Unit
+) {
+    view.retrieveNoteList()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Insert link", color = Colors.textColor) },
+        containerColor = Colors.panelColor,
+        text = {
+            LazyColumn {
+                items(view.notes.value) { note ->
+                    Text(
+                        text = note.title,
+                        color = Colors.textColor,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNoteSelected(note) }
+                            .padding(vertical = 8.dp, horizontal = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Colors.highlightTextColor)
+            }
+        }
+    )
+}
 
-@OptIn(ExperimentalPermissionsApi::class) // 1.
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MissingPermissionsComponent(
-    content: @Composable () -> Unit, // 2.
+    content: @Composable () -> Unit,
     permissions: List<String>,
     permissionText: String,
 ) {
-    val permissionsState = rememberMultiplePermissionsState( // 5.
+    val permissionsState = rememberMultiplePermissionsState(
         permissions = permissions
     )
 
-    if (permissionsState.allPermissionsGranted) { // 6.
+    if (permissionsState.allPermissionsGranted) {
         content()
     } else {
         Button(
             onClick = {
                 println("invoking permission dialogue")
-                permissionsState.launchMultiplePermissionRequest() // 7.
+                permissionsState.launchMultiplePermissionRequest()
             }
         ) {
             Text(text = permissionText?: "Request permissions")

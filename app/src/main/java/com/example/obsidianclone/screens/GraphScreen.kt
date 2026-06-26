@@ -3,16 +3,24 @@ package com.example.obsidianclone.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,15 +37,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
 import com.example.obsidianclone.GraphScreenViewModel
 import com.example.obsidianclone.GraphScreenViewModel.GraphNodeLight
+import com.example.obsidianclone.NoteRoute
+import com.example.obsidianclone.R
 import kotlin.math.ln
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -150,7 +161,7 @@ fun scatterNodes(matrix: Map<Int, GraphNodeLight>, width: Int = 1000, height: In
 @Composable
 fun GraphScreen(
     view: GraphScreenViewModel,
-    navController: NavHostController
+    navController: NavController
 ) {
     LaunchedEffect(true) {
         view.buildAdjacencyMatrix()
@@ -161,46 +172,60 @@ fun GraphScreen(
     var scale = 1/2000.0
 
 
-    Box() {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = Colors.backgroundColor)
-                .windowInsetsPadding(WindowInsets.systemBars),
-        ) {
-            val width = constraints.maxWidth.toDouble()
-            val height = constraints.maxHeight.toDouble()
-            var dimensions = Vector(width, height)
-            val center = Node(-1, dimensions / 2.0, title = "centerNode")
+    Scaffold(
+        bottomBar = {BottomBar(navController)},
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Colors.backgroundColor)
+            .windowInsetsPadding(WindowInsets.systemBars),
+    ) { innerPadding ->
 
-            LaunchedEffect(adjacencyMatrix) {
-                println("new loop")
-                while (true) {
-                    frame++
-                    if (frame % 100 == 0) {
-                    }
-                    withFrameMillis {
-                        nodes = nextPositions(nodes, adjacencyMatrix, center)
-                    }
+        Box(modifier = Modifier.padding(innerPadding)) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = Colors.backgroundColor)
+                    .windowInsetsPadding(WindowInsets.systemBars),
+            ) {
+                val width = constraints.maxWidth.toDouble()
+                val height = constraints.maxHeight.toDouble()
+                var dimensions = Vector(width, height)
+                val center = Node(-1, dimensions / 2.0, title = "centerNode")
 
+                LaunchedEffect(adjacencyMatrix) {
+                    println("new loop")
+                    while (true) {
+                        frame++
+                        if (frame % 100 == 0) {
+                        }
+                        withFrameMillis {
+                            nodes = nextPositions(nodes, adjacencyMatrix, center)
+                        }
+
+                    }
                 }
-            }
 //            VisualizeForces(nodes, center)
 
-            DisplayEdges(nodes, center, adjacencyMatrix, frame)
-            nodes.forEach { node ->
-                NoteNode(
-                    node = node,
-                    frame = frame,
-                    position = node.position,
-                )
+                DisplayEdges(nodes, center, adjacencyMatrix, frame)
+                nodes.forEach { node ->
+                    NoteNode(
+                        navController = navController,
+                        node = node,
+                        frame = frame,
+                        position = node.position,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun NoteNode(node: Node, position: Vector, frame: Int) {
+fun NoteNode(
+    navController: NavController,
+    node: Node,
+    position: Vector,
+    frame: Int) {
     val x = position.x
     val y = position.y
     val nodeRadius = 8.dp
@@ -213,6 +238,13 @@ fun NoteNode(node: Node, position: Vector, frame: Int) {
             )}
             .size(nodeRadius)
             .background(color = Colors.textColor, shape = CircleShape)
+            .pointerInput(node.id) {
+                detectTapGestures(
+                    onTap = {
+                        navController.navigate(route = NoteRoute(node.id))
+                    }
+                )
+            }
             .pointerInput(node.id) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -343,6 +375,39 @@ fun DisplayEdges(
                             end = position2
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun BottomBar(
+    navController: NavController,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .background(color = Colors.backgroundColor)
+            .padding(18.dp)
+            .fillMaxWidth(),
+    ) {
+        LazyRow(
+            modifier = Modifier,
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            item() {
+                IconButton(
+                    onClick = {
+                        navController.popBackStack()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.return_icon),
+                        contentDescription = "Search Icon",
+                        tint = Colors.textColor
+                    )
                 }
             }
         }

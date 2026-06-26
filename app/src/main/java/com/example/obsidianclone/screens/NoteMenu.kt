@@ -23,9 +23,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,13 +38,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
 import com.example.obsidianclone.DirectoryScreenRoute
 import com.example.obsidianclone.GraphScreenRoute
-import com.example.obsidianclone.Note
+import com.example.obsidianclone.LightNote
 import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteRoute
 import com.example.obsidianclone.R
@@ -52,29 +55,64 @@ import com.example.obsidianclone.SettingsScreenRoute
 @Composable fun NoteMenu(
     navController: NavController,
     view: NoteMenuViewModel,
+    directoryId: Int? = null,
 ) {
-    view.updateLightNoteList()
-    val noteListState by view.notes.collectAsStateWithLifecycle(emptyList())
+    LaunchedEffect(directoryId) {
+        if (directoryId != null) view.setDirectoryId(directoryId)
+        view.updateLightNoteList()
+        view.setPath()
+    }
+
+    val notes by view.notes.collectAsStateWithLifecycle(emptyList())
+    val path = view.thisPath
 
     Scaffold(
-        topBar = {TopBar("/path", navController)},
-        bottomBar = {BottomBar(view, navController, noteListState)},
+        topBar = {TopBar(path.value, navController)},
+        bottomBar = {BottomBar(view, navController, notes, directoryId)},
         modifier = Modifier
             .fillMaxSize()
             .background(color = Colors.backgroundColor)
             .windowInsetsPadding(WindowInsets.systemBars),
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .background(color = Colors.backgroundColor)
-        ) {
-            NoteList(
-                navController = navController,
-                view = view,
-                noteList = noteListState
-            )
-            Spacer(modifier = Modifier.fillMaxHeight())
+        if (notes.isEmpty()) {
+
+            println("notes")
+            println(notes)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(50.dp))
+                    Text(
+                        text = "No notes yet",
+                        color = Colors.textColor.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Tap + to create one",
+                        color = Colors.textColor.copy(alpha = 0.3f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .background(color = Colors.backgroundColor)
+            ) {
+                NoteList(
+                    navController = navController,
+                    view = view,
+                    noteList = notes,
+                    directoryId = directoryId
+                )
+                Spacer(modifier = Modifier.fillMaxHeight())
+            }
         }
     }
 }
@@ -141,7 +179,8 @@ private fun TopBar(
 private fun BottomBar(
     view: NoteMenuViewModel,
     navController: NavController,
-    noteList: List<Note>
+    noteList: List<LightNote>,
+    directoryId: Int?,
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -186,7 +225,7 @@ private fun BottomBar(
                                 }
                             }
                         }
-                        view.createEmptyNote(title)
+                        if (directoryId != null) view.createEmptyNote(title, directoryId)
                     }
                 ) {
                     Icon(
@@ -217,7 +256,8 @@ private fun BottomBar(
 fun NoteList(
     navController: NavController,
     view: NoteMenuViewModel,
-    noteList: List<Note>
+    noteList: List<LightNote>,
+    directoryId: Int?
 ) {
     LazyColumn(
         modifier = Modifier
@@ -245,12 +285,24 @@ fun NoteList(
                             )
                         }
                 ) {
-                    Text(text = note.title, color = Color.White)
+                    Column() {
+                        Text(text = note.title, color = Color.White)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (note.snippet.isNotBlank()) {
+                            Text(
+                                text = note.snippet.trim(),
+                                color = Colors.textColor.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
                 ContextMenu(
                     isContextVisible = isContextVisible,
                     deleteNoteFunction = { view.deleteNote(note.id) },
-                    addNewNoteFunction = { view.createEmptyNote() },
+                    addNewNoteFunction = { if (directoryId != null) view.createEmptyNote(directoryId = directoryId) },
                     title = note.title
                 )
             }

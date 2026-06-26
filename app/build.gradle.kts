@@ -11,6 +11,13 @@ plugins {
 //    mavenCentral()
 //}
 
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+        freeCompilerArgs.add("-Xopt-in=androidx.media3.common.util.UnstableApi")
+    }
+}
+
 android {
     namespace = "com.example.obsidianclone"
     compileSdk {
@@ -98,6 +105,7 @@ dependencies {
     implementation("androidx.media3:media3-ui-compose-material3:1.10.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
 //    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 //    val waveform_version = "1.1.1"

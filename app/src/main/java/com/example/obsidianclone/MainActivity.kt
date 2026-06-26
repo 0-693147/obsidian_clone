@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val db = AppDatabase.getInstance(applicationContext)
         val myDao = db.noteDao()
-        val myRepository = Repository(myDao)
+        val myRepository = Repository(myDao, this)
         val factoryMenu = NoteMenuViewModelFactory(myRepository)
         val factoryEdit = NoteEditModelFactory(myRepository)
         val factoryGraph = GraphScreenModelFactory(myRepository)
@@ -25,13 +25,15 @@ class MainActivity : ComponentActivity() {
         val viewEdit = ViewModelProvider(this, factoryEdit)[NoteEditViewModel::class.java]
         val viewGraph = ViewModelProvider(this, factoryGraph)[GraphScreenViewModel::class.java]
         val viewDirectory = ViewModelProvider(this, factoryDirectory)[DirectoryScreenViewModel::class.java]
+        val viewSettings = SettingsViewModel(myRepository)
         setContent {
             ObsidianCloneTheme() {
                 Navigation(
                     viewMenu = viewMenu,
                     viewEdit = viewEdit,
                     viewGraph = viewGraph,
-                    viewDirectory = viewDirectory
+                    viewDirectory = viewDirectory,
+                    viewSettings = viewSettings
                 )
             }
         }

@@ -1,46 +1,57 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.obsidianclone.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
-import com.example.obsidianclone.NoteMenuRoute
 import com.example.obsidianclone.R
+import com.example.obsidianclone.SettingsViewModel
 
 
 @Composable
 fun SettingsScreen (
+    view: SettingsViewModel,
     navController: NavController,
 ) {
+    val fontSize by view.fontSize.collectAsStateWithLifecycle()
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -74,28 +85,32 @@ fun SettingsScreen (
                 modifier = Modifier
                     .padding(innerPadding),
             ) {
-                val rowModifier = Modifier.padding(16.dp)
+                val rowModifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
                 item {
-                    Row(
-                        modifier = rowModifier,
-                    ) {
-                        Text(text = "Font", color = Colors.textColor)
-                    }
-                }
-                item {
-                    val min = 8
-                    val max = 16
-                    val default = 12
-                    var sliderPosition by remember {
-                        mutableFloatStateOf(default.toFloat() ) }
                     Row(
                         modifier = rowModifier,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "Font Size", color = Colors.textColor)
+                        Text(text = "Note Font", color = Colors.textColor)
+                        Box(modifier = Modifier.fillMaxWidth(0.7f)){
+                            FontMenu(view)
+                        }
+                    }
+                }
+                item {
+                    val min = 1
+                    val max = 30
+                    Row(
+                        modifier = rowModifier,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Note font Size", color = Colors.textColor)
                         Text(
-                            text = sliderPosition.toInt().toString(),
+                            text = fontSize.toString(),
                             color = Colors.textColor,
                             modifier = Modifier
                                 .weight(1f)
@@ -104,15 +119,17 @@ fun SettingsScreen (
                     }
                     Slider(
                         modifier = Modifier.padding(8.dp),
-                        value = sliderPosition,
+                        value = fontSize.toFloat(),
                         steps = max - min - 1,
                         valueRange = min.toFloat()..max.toFloat(),
-                        onValueChange = { sliderPosition = it }
+                        onValueChange = { view.setFontSize(it.toInt()) }
                     )
                 }
                 item {
                     Row(
-                        modifier = rowModifier
+                        modifier = rowModifier,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = "Language", color = Colors.textColor)
                     }
@@ -141,9 +158,7 @@ private fun BottomBar(
             item() {
                 IconButton(
                     onClick = {
-                        navController.navigate(NoteMenuRoute) {
-                            popUpTo(NoteMenuRoute)
-                        }
+                        navController.popBackStack()
                     }
                 ) {
                     Icon(
@@ -158,23 +173,51 @@ private fun BottomBar(
 }
 
 
+
 @Composable
-private fun ContextMenu(
-    isContextVisible: MutableState<Boolean>,
-    deleteNoteFunction: () -> Unit,
-    addNewNoteFunction: () -> Unit,
-    title: String
+fun FontMenu(
+    view: SettingsViewModel
 ) {
-    DropdownMenu(
-        expanded = isContextVisible.value,
-        onDismissRequest = { isContextVisible.value = false },
+    val fonts = listOf("Default", "Monospace", "Serif", "Sans-serif")
+    var expanded by remember { mutableStateOf(false)}
+    val selectedFont by view.font.collectAsStateWithLifecycle()
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
     ) {
-        DropdownMenuItem(
-            text = { Text(text = "Delete " + title) },
-            onClick = {
-                deleteNoteFunction()
-                isContextVisible.value = false
-            }
+        TextField(
+            value = selectedFont,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .width(IntrinsicSize.Min)
         )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            fonts.forEach { font ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = font,
+                            fontFamily = when (font) {
+                                "Monospace" -> FontFamily.Monospace
+                                "Serif" -> FontFamily.Serif
+                                "Sans-serif" -> FontFamily.SansSerif
+                                else -> FontFamily.Default
+                            }
+                        )
+                    },
+                    onClick = {
+                        view.setFont(font)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }

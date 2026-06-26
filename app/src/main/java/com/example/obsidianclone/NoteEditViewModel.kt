@@ -1,6 +1,7 @@
 package com.example.obsidianclone
 
 import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,10 +28,21 @@ class NoteEditModelFactory(
 class NoteEditViewModel(
     private val repository: Repository
 ): ViewModel() {
+
+    var notes = mutableStateOf<List<LightNote>>(emptyList())
     private val _selectedNote = MutableStateFlow<Note?>(null)
     val selectedNoteLoaded = MutableStateFlow(false)
     val _noteAssets = MutableStateFlow<List<NoteAsset>>(emptyList<NoteAsset>())
     val noteAssets = _noteAssets.asStateFlow()
+
+//    var isNoteLinkPickerVisible by mutableStateOf(false)
+//        private set
+//
+//    fun showNoteLinkPicker() { isNoteLinkPickerVisible = true }
+//    fun hideNoteLinkPicker() { isNoteLinkPickerVisible = false }
+
+
+    var isNoteLinkPickerVisible = mutableStateOf(false)
 
     val selectedNote: StateFlow<Note?> = _selectedNote
         .stateIn(
@@ -107,11 +119,23 @@ class NoteEditViewModel(
 
     private var updatingLinksJob: Job? = null
 
+
+    fun retrieveNoteList() {
+        val directoryId = selectedNote.value?.directoryId
+        if (directoryId != null) {
+            viewModelScope.launch {
+                val noteList = repository.retrieveNoteListLight().getOrNull()
+                println("all notes: $noteList")
+                notes.value = noteList?.filter { it.directoryId == directoryId } ?: emptyList()
+            }
+        }
+    }
+
     fun handleLinks(noteLinkList: List<String>) {
         updatingLinksJob?.cancel()
         updatingLinksJob = viewModelScope.launch {
             delay(2000)
-            val notes: List<Note>? = repository.retrieveNoteListLight().getOrNull()
+            val notes: List<LightNote>? = repository.retrieveNoteListLight().getOrNull()
             if (notes.isNullOrEmpty()) return@launch
             val thisNoteId = _selectedNote.value?.id
             if (thisNoteId == null) return@launch

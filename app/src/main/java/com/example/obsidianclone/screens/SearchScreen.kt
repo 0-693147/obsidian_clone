@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
-import com.example.obsidianclone.NoteMenuRoute
 import com.example.obsidianclone.NoteMenuViewModel
 import com.example.obsidianclone.NoteMenuViewModel.NoteSearchResult
 import com.example.obsidianclone.NoteRoute
@@ -221,9 +220,7 @@ private fun BottomBar(
             item() {
                 IconButton(
                     onClick = {
-                        navController.navigate(NoteMenuRoute) {
-                            popUpTo(NoteMenuRoute)
-                        }
+                        navController.popBackStack()
                     }
                 ) {
                     Icon(

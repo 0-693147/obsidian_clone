@@ -1,5 +1,6 @@
 package com.example.obsidianclone
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -25,14 +26,56 @@ class NoteMenuViewModel(
     private val repository: Repository
 ): ViewModel() {
 
-    // _notes doesnt have text values to prevent excessive memory usage
-    private val _notes = MutableStateFlow(emptyList<Note>())
-    val notes: Flow<List<Note>> = _notes.asStateFlow()
+    var thisDirectoryId = mutableStateOf<Int?>(null)
+    private var _path = mutableStateOf("")
+    val thisPath: androidx.compose.runtime.State<String> = _path
+    private val _notes = MutableStateFlow(emptyList<LightNote>())
+    val notes: Flow<List<LightNote>> = _notes.asStateFlow()
+
+    fun setDirectoryId(directoryId: Int) {
+        thisDirectoryId.value = directoryId
+    }
+
+    fun setPath() {
+        var directoryid: Int? = this.thisDirectoryId.value?: return
+        var path = ""
+        if (directoryid != null) {
+            println("start launch path")
+            viewModelScope.launch {
+                var i = 0
+                while (i < 5 && directoryid != null) {
+                    println("while")
+                    val directory =
+                        repository.retrieveDirectory(directoryId = directoryid!!).getOrNull()
+                    println(directory?.name)
+                    if (directory == null) break
+                    if (directory?.parentId == null) {
+                        path += "/" + path
+                        break
+                    }
+                    path = "/" + directory.name + path
+                    println("path:")
+                    println(path)
+                    directoryid = directory.parentId
+                    i++
+                }
+                if (i == 5) {
+                    path = "..." + path
+                }
+                _path.value = path
+            }
+        }
+    }
 
     fun updateLightNoteList() {
         viewModelScope.launch {
             val noteList = repository.retrieveNoteListLight().getOrNull()
-            _notes.value = noteList?: emptyList()
+            println("all notes: $noteList")
+            if (thisDirectoryId != null) {
+                _notes.value = noteList?.filter { it.directoryId == thisDirectoryId.value} ?: emptyList()
+            } else {
+                _notes.value = noteList?: emptyList()
+            }
         }
     }
 
@@ -43,9 +86,9 @@ class NoteMenuViewModel(
         }
     }
 
-    fun createEmptyNote(title: String = "New Note") {
+    fun createEmptyNote(title: String = "New Note", directoryId: Int) {
         viewModelScope.launch {
-            repository.createEmptyNote(title)
+            repository.createEmptyNote(title, directoryId)
             updateLightNoteList()
         }
     }

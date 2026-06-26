@@ -22,7 +22,8 @@ import kotlinx.serialization.Serializable
 //}
 
 @Serializable
-object NoteMenuRoute
+data class NoteMenuRoute(val directoryId: Int)
+
 
 
 @Serializable
@@ -45,21 +46,23 @@ fun Navigation(
     viewMenu: NoteMenuViewModel,
     viewEdit: NoteEditViewModel,
     viewGraph: GraphScreenViewModel,
-    viewDirectory: DirectoryScreenViewModel
+    viewDirectory: DirectoryScreenViewModel,
+    viewSettings: SettingsViewModel,
 ) {
     NavHost(
         navController = navController,
-        startDestination = NoteMenuRoute
+        startDestination = DirectoryScreenRoute
     ) {
-        composable<NoteMenuRoute>{
-            NoteMenu(navController, viewMenu)
+        composable<NoteMenuRoute>{ backStackEntry ->
+            val route: NoteMenuRoute = backStackEntry.toRoute()
+            NoteMenu(navController, viewMenu, directoryId = route.directoryId)
         }
         composable<NoteRoute>{ backStackEntry ->
             val gotoNote: NoteRoute = backStackEntry.toRoute()
-            NoteEditor(navController, view = viewEdit, thisNoteId = gotoNote.id)
+            NoteEditor(navController, viewEdit, viewSettings, thisNoteId = gotoNote.id)
         }
         composable<SettingsScreenRoute>{
-            SettingsScreen(navController)
+            SettingsScreen(viewSettings, navController)
         }
         composable<SearchScreenRoute>{
             SearchScreen(viewMenu, navController)

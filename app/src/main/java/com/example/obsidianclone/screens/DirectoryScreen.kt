@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,7 +28,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -43,9 +41,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.obsidianclone.Colors
-import com.example.obsidianclone.DirectoryItem
+import com.example.obsidianclone.DirectoryNode
 import com.example.obsidianclone.DirectoryScreenViewModel
 import com.example.obsidianclone.GraphScreenRoute
 import com.example.obsidianclone.NoteMenuRoute
@@ -57,33 +56,7 @@ import com.example.obsidianclone.SearchScreenRoute
     view: DirectoryScreenViewModel,
     navController: NavController
 ) {
-    val context = LocalContext.current
-    view.root = remember {
-        view.loadDirectoryStructure(context) ?: DirectoryItem(
-            name = "root",
-            level = 0,
-            hasOnlyNotes = false,
-            parent = null,
-            children = mutableStateListOf()
-        ).also { root ->
-            val allNotes = DirectoryItem(
-                name = "All Notes",
-                level = 1,
-                hasOnlyNotes = false,
-                parent = root,
-                children = mutableStateListOf()
-            )
-            val myNotes = DirectoryItem(
-                name = "My Notes",
-                level = 2,
-                hasOnlyNotes = true,
-                parent = allNotes,
-                children = mutableStateListOf()
-            )
-            allNotes.children.add(myNotes)
-            root.children.add(allNotes)
-        }
-    }
+    var tree = view.tree.collectAsStateWithLifecycle().value
 
     Scaffold(
         topBar = {
@@ -96,15 +69,12 @@ import com.example.obsidianclone.SearchScreenRoute
             DirectoryBottomBar(
                 navController = navController,
                 addFolderFunction = {
-                    view.root?.children?.add(
-                        DirectoryItem(
-                            name = "New Folder",
-                            level = 1,
-                            hasOnlyNotes = false,
-                            parent = view.root,
-                            children = mutableStateListOf()
+                    if (tree != null) {
+                        view.createDirectory(
+                            name = "New Directory",
+                            parentId = tree.directory.id
                         )
-                    )
+                    }
                 }
             )
         },
@@ -116,11 +86,15 @@ import com.example.obsidianclone.SearchScreenRoute
             modifier = Modifier
                 .padding(innerPadding)
         ) {
-            val root = view.root
-            if (root != null) directoryList(
-                view,
-                directoriesFlattened = root.flatten().slice(1..<root.flatten().size),
+            if (tree != null) {
+                val flattened = tree!!.flatten()
+                    .drop(1)
+                directoryList(
+                    navController = navController,
+                    view = view,
+                    directoriesFlattened = flattened
                 )
+            }
             if (view.isRenameCardVisible) RenameCard(view)
         }
     }
@@ -129,8 +103,9 @@ import com.example.obsidianclone.SearchScreenRoute
 
 @Composable
 private fun directoryList(
+    navController: NavController,
     view: DirectoryScreenViewModel,
-    directoriesFlattened: List<DirectoryItem>,
+    directoriesFlattened: List<Pair<Int, DirectoryNode>>,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -138,22 +113,23 @@ private fun directoryList(
             .background(Colors.backgroundColor)
             .padding(16.dp)
     ) {
-        items(directoriesFlattened) { directory ->
+        items(directoriesFlattened) { (depth, directory) ->
             val isContextVisible = remember { mutableStateOf(false) }
             val isHighlighted = remember { mutableStateOf(false) }
-            Column() {
+            Column {
                 DirectoryRow(
-                    directory,
-                    isHighlighted,
-                    isContextVisible
+                    navController = navController,
+                    directory = directory,
+                    depth = depth,
+                    isHighlighted = isHighlighted,
+                    isContextVisible = isContextVisible
                 )
-                Box(modifier = Modifier.padding(start = (directory.level * 20).dp)) {
+                Box(modifier = Modifier.padding(start = (depth * 20).dp)) {
                     DirectoryDropDownMenu(
-                        view,
-                        directory,
-                        isContextVisible,
-                        isHighlighted,
-                        directory.hasOnlyNotes
+                        view = view,
+                        directory = directory,
+                        isContextVisible = isContextVisible,
+                        isHighlighted = isHighlighted,
                     )
                 }
             }
@@ -161,41 +137,45 @@ private fun directoryList(
     }
 }
 
-
 @Composable
 private fun DirectoryRow(
-    directory: DirectoryItem,
+    navController: NavController,
+    directory: DirectoryNode,
+    depth: Int,
     isHighlighted: MutableState<Boolean>,
     isContextVisible: MutableState<Boolean>,
 ) {
     val panelColor = if (isHighlighted.value) Colors.panelColorFocused else Colors.panelColor
     Box(
         modifier = Modifier
-            .padding(start = (directory.level * 20).dp)
+            .padding(start = (depth * 20).dp)
             .clip(RoundedCornerShape(4.dp))
             .background(panelColor)
             .fillMaxWidth()
             .height(30.dp)
-            .pointerInput(true) {
-            detectTapGestures(
-                onLongPress = {
-                    isContextVisible.value = true
-                    isHighlighted.value = true
-                },
-                onTap = {
-//                    navController.navigate( route = NoteRoute(note.id))
-                }
-            )
-        },
+            .pointerInput(directory.directory.hasOnlyNotes) {
+                detectTapGestures(
+                    onLongPress = {
+                        isContextVisible.value = true
+                        isHighlighted.value = true
+                    },
+                    onTap = {
+                        println("tapped")
+                        println("has only notes:")
+                        println(directory.directory.hasOnlyNotes)
+                        if (directory.directory.hasOnlyNotes) {
+                            navController.navigate(NoteMenuRoute(directory.directory.id))
+                        }
+                    }
+                )
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-        Box(modifier = Modifier.padding(horizontal = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.padding(horizontal = 8.dp)) {
                 Icon(
                     painter = painterResource(
-                        if (directory.hasOnlyNotes) {
+                        if (directory.directory.hasOnlyNotes) {
                             R.drawable.outline_folder_24_green
                         } else {
                             R.drawable.outline_folder_24
@@ -207,7 +187,7 @@ private fun DirectoryRow(
                 )
             }
             Text(
-                text = directory.name,
+                text = directory.directory.name,
                 color = Color.White
             )
         }
@@ -227,20 +207,6 @@ private fun DirectoryTopBar(
             .background(Colors.backgroundColor)
             .padding(horizontal = 8.dp)
     ) {
-        IconButton(
-            onClick = {
-                navController.navigate(NoteMenuRoute)
-            },
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(y = 14.dp)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.return_icon),
-                contentDescription = "Back Icon",
-                tint = Colors.textColor
-            )
-        }
         Text(
             text = path,
             color = Colors.textColor,
@@ -313,56 +279,50 @@ private fun DirectoryBottomBar(
 @Composable
 fun DirectoryDropDownMenu(
     view: DirectoryScreenViewModel,
-    directory: DirectoryItem,
+    directory: DirectoryNode,
     isContextVisible: MutableState<Boolean>,
     isHighlighted: MutableState<Boolean>,
-    isNotesOnly: Boolean,
 ) {
-    val context = LocalContext.current
     DropdownMenu(
         expanded = isContextVisible.value,
         onDismissRequest = {
             isContextVisible.value = false
             isHighlighted.value = false
-           },
+        },
     ) {
         DropdownMenuItem(
-            text = { Text(text = "Delete " + directory.name) },
+            text = { Text(text = "Delete " + directory.directory.name) },
             onClick = {
-                directory.delete()
-                view.saveDirectoryStructure(context)
-                isContextVisible.value = false
-            }
-        )
-        if (!isNotesOnly) DropdownMenuItem(
-            text = { Text(text = "Add new directory") },
-            onClick = {
-                directory.addSubdirectory(
-                    DirectoryItem(
-                        name = "New Directory",
-                        level = directory.level + 1,
-                        hasOnlyNotes = false,
-                        parent = directory,
-                        children = mutableStateListOf()
-                    ),
-                )
-                view.saveDirectoryStructure(context)
+                isHighlighted.value = false
+                view.deleteDirectory(directory.directory.id)
                 isContextVisible.value = false
             }
         )
         DropdownMenuItem(
-            text = { Text(text = "Rename " + directory.name) },
+            text = { Text(text = "Rename " + directory.directory.name) },
             onClick = {
+                isHighlighted.value = false
                 view.isRenameCardVisible = true
-                isContextVisible.value = false
                 view.focusedDirectory = directory
+                isContextVisible.value = false
             }
         )
-        if (!isNotesOnly and directory.children.isEmpty()) DropdownMenuItem(
-            text = { Text(text = "Make it a note directory") },
+        if (!directory.directory.hasOnlyNotes) DropdownMenuItem(
+            text = { Text("Add new directory") },
             onClick = {
-                directory.hasOnlyNotes = true
-                view.saveDirectoryStructure(context)
+                isHighlighted.value = false
+                view.createDirectory("New Directory", directory.directory.id)
+                isContextVisible.value = false
+            }
+        )
+
+        if (directory.children.isEmpty()) DropdownMenuItem(
+            text = {
+                Text(if (directory.directory.hasOnlyNotes) "Make it a folder" else "Make it a note directory")
+            },
+            onClick = {
+                isHighlighted.value = false
+                view.updateDirectoryType(directory.directory.id, !directory.directory.hasOnlyNotes)
                 isContextVisible.value = false
             }
         )
@@ -400,7 +360,7 @@ fun RenameCard(
                     textStyle = TextStyle(
                         fontSize = 4.em
                     ),
-                    placeholder = { Text(text = view.focusedDirectory?.name ?: "") },
+                    placeholder = { Text(text = view.focusedDirectory?.directory?.name ?: "") },
                     value = textState.value,
                     onValueChange = { textValue ->
                         textState.value = textValue
@@ -429,8 +389,9 @@ fun RenameCard(
                 }
                 TextButton(
                     onClick = {
-                        view.focusedDirectory?.rename(textState.value.trim())
-                        view.saveDirectoryStructure(context)
+                        view.focusedDirectory?.directory?.id?.let { id ->
+                            view.renameDirectory(id, textState.value.trim())
+                        }
                         view.isRenameCardVisible = false
                     }
                 ) {

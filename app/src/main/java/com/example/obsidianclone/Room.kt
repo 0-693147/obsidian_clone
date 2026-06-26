@@ -7,6 +7,7 @@ import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
@@ -26,12 +27,42 @@ object Converters {
     fun toUri(value: String?): Uri? = value?.let { Uri.parse(it) }
 }
 
-@Entity
+
+@Entity(
+    foreignKeys = [
+        ForeignKey(
+            entity = Directory::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("directoryId"),
+            onDelete = ForeignKey.SET_NULL
+        ),
+    ]
+)
+data class Directory(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val name: String,
+    val parentId: Int? = null,
+    val directoryId: Int? = null,
+    val hasOnlyNotes: Boolean = false
+)
+
+@Entity (
+    foreignKeys = [
+        ForeignKey(
+            entity = Directory::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("directoryId"),
+            onDelete = ForeignKey.SET_NULL
+        ),
+    ]
+)
 data class Note (
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val title: String = "",
     val text: String = "",
+    val directoryId: Int? = null
 )
 
 @Entity(
@@ -68,7 +99,7 @@ data class NoteAsset (
         childColumns = arrayOf("otherNoteId"),
         onUpdate = ForeignKey.CASCADE,
         onDelete = ForeignKey.CASCADE
-)
+        )
     ]
 )
 data class NodeConnection(
@@ -82,13 +113,36 @@ data class NodeConnection(
 data class LightNote (
     val id: Int = 0,
     val title: String = "",
+    val directoryId: Int? = null,
+    val snippet: String = ""
 )
 
 
 @Dao
 interface NoteDao {
-    @Query("INSERT INTO Note (title, text) VALUES (:title, :text)")
-    suspend fun newNote(title: String = "", text: String = "")
+    @Insert
+    suspend fun insertDirectory(directory: Directory)
+
+    @Query("UPDATE Directory SET name = :name WHERE id = :id")
+    suspend fun renameDirectory(id: Int, name: String)
+
+    @Query("DELETE FROM Directory WHERE id = :id")
+    suspend fun deleteDirectory(id: Int)
+
+    @Query("SELECT * FROM Directory")
+    suspend fun retrieveDirectories(): List<Directory>
+
+    @Query("SELECT * FROM Directory WHERE directoryId = :directoryId")
+    suspend fun retrieveDirectory(directoryId: Int): Directory
+
+    @Query("UPDATE Note SET directoryId = :directoryId WHERE id = :noteId")
+    suspend fun updateNoteDirectory(noteId: Int, directoryId: Int?)
+
+    @Query("UPDATE Directory SET hasOnlyNotes = :hasOnlyNotes WHERE id = :id")
+    suspend fun updateDirectoryType(id: Int, hasOnlyNotes: Boolean)
+
+    @Query("INSERT INTO Note (title, text, directoryId) VALUES (:title, :text, :directoryId)")
+    suspend fun newNote(title: String = "", directoryId: Int, text: String = "")
 
     @Query("UPDATE Note SET title = :title  WHERE id = :id")
     suspend fun updateTitle(id: Int, title: String)
@@ -99,7 +153,7 @@ interface NoteDao {
     @Query("DELETE FROM Note WHERE id = :id")
     suspend fun deleteNote(id: Int)
 
-    @Query("SELECT id, title, '' FROM Note")
+    @Query("SELECT id, title, directoryId, SUBSTR(text, 1, 100) as snippet FROM Note")
     suspend fun retrieveNoteListLight(): List<LightNote>
 
     @Query("SELECT id, title, text FROM Note")
@@ -139,7 +193,7 @@ interface NoteDao {
 
 
 @Database(
-    entities = [Note::class, NoteAsset::class, NodeConnection::class],
+    entities = [Note::class, NoteAsset::class, NodeConnection::class, Directory::class],
     version = 1,
 //    autoMigrations = [
 //        AutoMigration(from = 1, to = 2)
@@ -158,7 +212,7 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "obsidian_db1"
+                    "obsidian_db2"
                 ).build().also { INSTANCE = it }
             }
     }
